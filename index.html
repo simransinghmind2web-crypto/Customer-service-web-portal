@@ -1,1 +1,942 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>In-Service Support System — Aerotrain Corp</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --navy:    #0a1628;
+    --navy2:   #0f2040;
+    --steel:   #1a3a5c;
+    --mid:     #1e4976;
+    --accent:  #00c9ff;
+    --accent2: #0073b1;
+    --gold:    #f0a500;
+    --danger:  #e03c3c;
+    --success: #1db954;
+    --warn:    #f0a500;
+    --text:    #e8edf4;
+    --muted:   #7a95b4;
+    --border:  rgba(0,201,255,0.15);
+    --glass:   rgba(10,22,40,0.85);
+    --card:    rgba(15,32,64,0.95);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: var(--navy);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─── animated grid background ─── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background-image:
+      linear-gradient(rgba(0,201,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,201,255,0.04) 1px, transparent 1px);
+    background-size: 44px 44px;
+    pointer-events: none;
+  }
+  body::after {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(0,115,177,0.25) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* ─── layout wrapper ─── */
+  .app { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 0 24px 60px; }
+
+  /* ─── header ─── */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 22px 0 18px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 36px;
+  }
+  .logo { display: flex; align-items: center; gap: 14px; }
+  .logo-icon {
+    width: 44px; height: 44px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+  }
+  .logo-text h1 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.45rem; font-weight: 700; letter-spacing: 0.04em;
+    color: var(--text);
+  }
+  .logo-text p { font-size: 0.72rem; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .badge-live {
+    display: flex; align-items: center; gap: 7px;
+    background: rgba(29,185,84,0.1); border: 1px solid rgba(29,185,84,0.3);
+    border-radius: 20px; padding: 5px 14px;
+    font-size: 0.73rem; font-weight: 600; color: var(--success); letter-spacing: 0.06em;
+  }
+  .badge-live span { width: 7px; height: 7px; border-radius: 50%; background: var(--success); animation: pulse 1.6s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.4)} }
+
+  /* ─── tabs ─── */
+  .tabs { display: flex; gap: 4px; margin-bottom: 32px; background: var(--navy2); border-radius: 12px; padding: 5px; border: 1px solid var(--border); }
+  .tab-btn {
+    flex: 1; padding: 10px 0; border: none; background: transparent;
+    color: var(--muted); font-family: 'Rajdhani', sans-serif; font-size: 1rem; font-weight: 600;
+    letter-spacing: 0.05em; cursor: pointer; border-radius: 9px; transition: all .2s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .tab-btn.active {
+    background: linear-gradient(135deg, var(--accent2), rgba(0,201,255,0.3));
+    color: var(--text);
+    box-shadow: 0 2px 12px rgba(0,201,255,0.15);
+  }
+  .tab-btn:not(.active):hover { background: rgba(255,255,255,0.04); color: var(--text); }
+
+  /* ─── panels ─── */
+  .panel { display: none; animation: fadeIn .3s ease; }
+  .panel.active { display: block; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ─── stats row ─── */
+  .stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 28px; }
+  .stat-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 18px 20px; position: relative; overflow: hidden;
+  }
+  .stat-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    border-radius: 14px 14px 0 0;
+  }
+  .stat-card.open::before   { background: var(--gold); }
+  .stat-card.active::before { background: var(--accent); }
+  .stat-card.closed::before { background: var(--success); }
+  .stat-card.total::before  { background: var(--muted); }
+  .stat-card .num { font-family: 'Rajdhani', sans-serif; font-size: 2.4rem; font-weight: 700; line-height: 1; }
+  .stat-card.open .num   { color: var(--gold); }
+  .stat-card.active .num { color: var(--accent); }
+  .stat-card.closed .num { color: var(--success); }
+  .stat-card .label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 4px; }
+
+  /* ─── form card ─── */
+  .form-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; overflow: hidden;
+  }
+  .form-header {
+    padding: 20px 28px; border-bottom: 1px solid var(--border);
+    background: rgba(0,201,255,0.04);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .form-header h2 { font-family: 'Rajdhani', sans-serif; font-size: 1.2rem; font-weight: 700; letter-spacing: 0.04em; }
+  .form-header p  { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+  .form-body { padding: 28px; }
+
+  .form-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .form-group { display: flex; flex-direction: column; gap: 7px; }
+  .form-group.full { grid-column: 1 / -1; }
+
+  label { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); font-weight: 600; }
+  input, select, textarea {
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(0,201,255,0.2);
+    border-radius: 9px; padding: 11px 14px; color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif; font-size: 0.88rem;
+    transition: border-color .2s, box-shadow .2s; outline: none;
+    width: 100%;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,201,255,0.1);
+  }
+  input::placeholder, textarea::placeholder { color: var(--muted); opacity: .6; }
+  select option { background: var(--navy2); color: var(--text); }
+  textarea { resize: vertical; min-height: 90px; }
+
+  .severity-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .sev-btn {
+    padding: 8px 18px; border-radius: 20px; border: 1px solid; cursor: pointer;
+    font-size: 0.8rem; font-weight: 600; letter-spacing: 0.05em; transition: all .2s;
+    background: transparent;
+  }
+  .sev-btn[data-sev="low"]    { border-color: var(--success); color: var(--success); }
+  .sev-btn[data-sev="medium"] { border-color: var(--warn); color: var(--warn); }
+  .sev-btn[data-sev="high"]   { border-color: #e07000; color: #e07000; }
+  .sev-btn[data-sev="critical"]{ border-color: var(--danger); color: var(--danger); }
+  .sev-btn.selected[data-sev="low"]     { background: rgba(29,185,84,0.18); }
+  .sev-btn.selected[data-sev="medium"]  { background: rgba(240,165,0,0.18); }
+  .sev-btn.selected[data-sev="high"]    { background: rgba(224,112,0,0.18); }
+  .sev-btn.selected[data-sev="critical"]{ background: rgba(224,60,60,0.18); }
+
+  .form-actions { display: flex; gap: 12px; margin-top: 28px; justify-content: flex-end; }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    border: none; border-radius: 9px; padding: 12px 28px;
+    color: var(--navy); font-family: 'Rajdhani', sans-serif;
+    font-size: 1rem; font-weight: 700; letter-spacing: 0.06em;
+    cursor: pointer; transition: transform .15s, box-shadow .15s;
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,201,255,0.3); }
+  .btn-secondary {
+    background: transparent; border: 1px solid var(--border);
+    border-radius: 9px; padding: 12px 22px; color: var(--muted);
+    font-family: 'Rajdhani', sans-serif; font-size: 1rem; font-weight: 600;
+    cursor: pointer; transition: border-color .2s, color .2s;
+  }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--text); }
+
+  /* ─── toast ─── */
+  #toast {
+    position: fixed; bottom: 32px; right: 32px; z-index: 999;
+    background: rgba(15,32,64,0.97); border: 1px solid var(--success);
+    border-radius: 12px; padding: 16px 22px;
+    display: flex; align-items: center; gap: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    transform: translateY(100px); opacity: 0; transition: all .3s ease;
+    max-width: 380px;
+  }
+  #toast.show { transform: translateY(0); opacity: 1; }
+  #toast .toast-icon { font-size: 1.4rem; }
+  #toast .toast-text strong { display: block; color: var(--success); font-size: 0.9rem; }
+  #toast .toast-text span  { font-size: 0.78rem; color: var(--muted); }
+
+  /* ─── complaints table ─── */
+  .table-toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px; flex-wrap: wrap; gap: 12px;
+  }
+  .search-box { position: relative; }
+  .search-box input { padding-left: 36px; width: 260px; }
+  .search-box::before { content: '🔍'; position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 0.8rem; opacity: .6; }
+  .filter-row { display: flex; gap: 8px; }
+  .filter-btn {
+    padding: 7px 14px; border-radius: 7px; border: 1px solid var(--border);
+    background: transparent; color: var(--muted); font-size: 0.78rem;
+    cursor: pointer; transition: all .2s; font-family: 'IBM Plex Sans', sans-serif;
+  }
+  .filter-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(0,201,255,0.08); }
+
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    text-align: left; font-size: 0.7rem; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--muted); padding: 10px 14px;
+    border-bottom: 1px solid var(--border); font-weight: 600;
+  }
+  tbody tr {
+    border-bottom: 1px solid rgba(0,201,255,0.06); transition: background .15s; cursor: pointer;
+  }
+  tbody tr:hover { background: rgba(0,201,255,0.05); }
+  tbody td { padding: 13px 14px; font-size: 0.85rem; }
+  .td-ticket { font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem; color: var(--accent); }
+
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 600;
+    letter-spacing: 0.06em;
+  }
+  .status-pill::before { content: ''; width: 6px; height: 6px; border-radius: 50%; }
+  .status-pill.open     { background: rgba(240,165,0,0.12); color: var(--gold); border: 1px solid rgba(240,165,0,0.3); }
+  .status-pill.open::before { background: var(--gold); }
+  .status-pill.acknowledged { background: rgba(0,201,255,0.1); color: var(--accent); border: 1px solid rgba(0,201,255,0.3); }
+  .status-pill.acknowledged::before { background: var(--accent); }
+  .status-pill.in-progress  { background: rgba(0,115,177,0.15); color: #4fc3f7; border: 1px solid rgba(79,195,247,0.3); }
+  .status-pill.in-progress::before { background: #4fc3f7; }
+  .status-pill.verified  { background: rgba(29,185,84,0.1); color: #66d9a0; border: 1px solid rgba(29,185,84,0.25); }
+  .status-pill.verified::before { background: #66d9a0; }
+  .status-pill.closed    { background: rgba(29,185,84,0.12); color: var(--success); border: 1px solid rgba(29,185,84,0.3); }
+  .status-pill.closed::before { background: var(--success); }
+
+  .sev-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+  .sev-dot.low      { background: var(--success); }
+  .sev-dot.medium   { background: var(--warn); }
+  .sev-dot.high     { background: #e07000; }
+  .sev-dot.critical { background: var(--danger); }
+
+  /* ─── detail modal ─── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; z-index: 100;
+    background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--navy2); border: 1px solid var(--border);
+    border-radius: 18px; width: 100%; max-width: 680px;
+    max-height: 90vh; overflow-y: auto;
+    animation: scaleIn .25s ease;
+  }
+  @keyframes scaleIn { from{opacity:0;transform:scale(.95)} to{opacity:1;transform:scale(1)} }
+  .modal-head {
+    padding: 22px 28px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: flex-start; justify-content: space-between;
+    position: sticky; top: 0; background: var(--navy2); z-index: 1;
+  }
+  .modal-head h3 { font-family: 'Rajdhani', sans-serif; font-size: 1.2rem; font-weight: 700; }
+  .modal-head .ticket-id { font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem; color: var(--accent); margin-top: 3px; }
+  .close-btn { background: transparent; border: none; color: var(--muted); font-size: 1.4rem; cursor: pointer; padding: 0 4px; line-height: 1; }
+  .close-btn:hover { color: var(--text); }
+  .modal-body { padding: 24px 28px; }
+
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 22px; }
+  .detail-item label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); display: block; margin-bottom: 4px; }
+  .detail-item span  { font-size: 0.88rem; }
+
+  /* process timeline */
+  .timeline { margin-top: 4px; }
+  .timeline h4 { font-family: 'Rajdhani', sans-serif; font-size: 1rem; font-weight: 700; letter-spacing: 0.04em; margin-bottom: 16px; color: var(--muted); text-transform: uppercase; }
+  .tl-item { display: flex; gap: 16px; padding-bottom: 20px; position: relative; }
+  .tl-item:not(:last-child)::before {
+    content: ''; position: absolute; left: 15px; top: 30px; bottom: 0; width: 1px;
+    background: var(--border);
+  }
+  .tl-dot {
+    width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 0.85rem;
+    border: 2px solid;
+  }
+  .tl-dot.done    { background: rgba(29,185,84,0.15); border-color: var(--success); }
+  .tl-dot.current { background: rgba(0,201,255,0.15); border-color: var(--accent); animation: pulseBorder 2s infinite; }
+  .tl-dot.pending { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.1); opacity: .5; }
+  @keyframes pulseBorder { 0%,100%{box-shadow:0 0 0 0 rgba(0,201,255,.4)} 50%{box-shadow:0 0 0 6px rgba(0,201,255,0)} }
+  .tl-content p  { font-size: 0.86rem; font-weight: 500; line-height: 1.4; padding-top: 4px; }
+  .tl-content small { font-size: 0.72rem; color: var(--muted); }
+
+  .action-section { margin-top: 22px; padding-top: 22px; border-top: 1px solid var(--border); }
+  .action-section h4 { font-family: 'Rajdhani', sans-serif; font-size: 1rem; font-weight: 700; letter-spacing: 0.04em; margin-bottom: 14px; text-transform: uppercase; color: var(--muted); }
+  .action-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+  .act-btn {
+    padding: 9px 18px; border-radius: 8px; border: 1px solid;
+    font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all .2s;
+    font-family: 'IBM Plex Sans', sans-serif; background: transparent;
+  }
+  .act-btn.ack    { border-color: var(--accent); color: var(--accent); }
+  .act-btn.ack:hover    { background: rgba(0,201,255,0.12); }
+  .act-btn.fix    { border-color: var(--warn); color: var(--warn); }
+  .act-btn.fix:hover    { background: rgba(240,165,0,0.1); }
+  .act-btn.verify { border-color: #4fc3f7; color: #4fc3f7; }
+  .act-btn.verify:hover { background: rgba(79,195,247,0.1); }
+  .act-btn.close  { border-color: var(--success); color: var(--success); }
+  .act-btn.close:hover  { background: rgba(29,185,84,0.12); }
+  .act-btn:disabled { opacity: .3; cursor: not-allowed; }
+
+  textarea.note-input {
+    margin-top: 12px; font-size: 0.84rem;
+    background: rgba(255,255,255,0.04);
+  }
+
+  /* ─── process flow panel ─── */
+  .flow-section { margin-bottom: 28px; }
+  .flow-section h3 { font-family: 'Rajdhani', sans-serif; font-size: 1.1rem; font-weight: 700; letter-spacing: 0.05em; margin-bottom: 18px; }
+  .flow-steps { display: flex; flex-direction: column; gap: 0; }
+  .flow-step {
+    display: flex; gap: 0; align-items: stretch;
+  }
+  .flow-step-connector { display: flex; flex-direction: column; align-items: center; width: 44px; flex-shrink: 0; }
+  .step-circle {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent2), rgba(0,201,255,0.4));
+    border: 2px solid var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Rajdhani', sans-serif; font-size: 0.95rem; font-weight: 700;
+    color: var(--text); flex-shrink: 0; z-index: 1;
+  }
+  .step-line { flex: 1; width: 2px; background: linear-gradient(var(--accent), transparent); opacity: .25; min-height: 20px; }
+  .flow-step:last-child .step-line { display: none; }
+  .step-body {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px 20px; margin-left: 14px; margin-bottom: 12px;
+    flex: 1;
+  }
+  .step-body h4 { font-family: 'Rajdhani', sans-serif; font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
+  .step-body p  { font-size: 0.83rem; color: var(--muted); line-height: 1.5; }
+  .step-role { display: inline-block; margin-top: 8px; padding: 3px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.07em; }
+  .step-role.cfsate   { background: rgba(0,201,255,0.1); color: var(--accent); border: 1px solid rgba(0,201,255,0.25); }
+  .step-role.aerotrain{ background: rgba(240,165,0,0.1); color: var(--gold); border: 1px solid rgba(240,165,0,0.25); }
+  .step-role.both     { background: rgba(29,185,84,0.1); color: var(--success); border: 1px solid rgba(29,185,84,0.25); }
+
+  /* responsive */
+  @media(max-width:768px){
+    .stats { grid-template-columns: 1fr 1fr; }
+    .form-grid { grid-template-columns: 1fr; }
+    .form-group.full { grid-column: 1; }
+    .detail-grid { grid-template-columns: 1fr; }
+    header { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .tabs { flex-wrap: wrap; }
+  }
+  @media(max-width:480px){
+    .stats { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo">
+      <div class="logo-icon">✈️</div>
+      <div class="logo-text">
+        <h1>ISS — In-Service Support</h1>
+        <p>CFSATE &nbsp;·&nbsp; Aerotrain Corp &nbsp;·&nbsp; Snag Management System</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="badge-live"><span></span>SYSTEM ONLINE</div>
+    </div>
+  </header>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('report')">📋 Report Snag</button>
+    <button class="tab-btn" onclick="switchTab('complaints')">🗂️ All Complaints</button>
+    <button class="tab-btn" onclick="switchTab('flow')">🔄 Process Flow</button>
+  </div>
+
+  <!-- ══════════ PANEL: REPORT ══════════ -->
+  <div class="panel active" id="panel-report">
+
+    <div class="stats">
+      <div class="stat-card open">
+        <div class="num" id="stat-open">0</div>
+        <div class="label">Open Snags</div>
+      </div>
+      <div class="stat-card active">
+        <div class="num" id="stat-active">0</div>
+        <div class="label">In Progress</div>
+      </div>
+      <div class="stat-card closed">
+        <div class="num" id="stat-closed">0</div>
+        <div class="label">Resolved</div>
+      </div>
+      <div class="stat-card total">
+        <div class="num" id="stat-total">0</div>
+        <div class="label">Total Logged</div>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <div class="form-header">
+        <div>
+          <h2>🛠️ SNAG REPORT — IN-SERVICE SUPPORT FORM</h2>
+          <p>Complete all fields. Form will be automatically routed to Aerotrain Corp upon submission.</p>
+        </div>
+      </div>
+      <div class="form-body">
+        <div class="form-grid">
+
+          <div class="form-group">
+            <label>Trainer Unit / System ID</label>
+            <input type="text" id="f-trainer" placeholder="e.g. TRN-001, SIM-A2"/>
+          </div>
+          <div class="form-group">
+            <label>Date of Snag</label>
+            <input type="date" id="f-date"/>
+          </div>
+
+          <div class="form-group">
+            <label>Reported By (CFSATE Rep)</label>
+            <input type="text" id="f-reporter" placeholder="Full name"/>
+          </div>
+          <div class="form-group">
+            <label>Department / Unit</label>
+            <input type="text" id="f-dept" placeholder="e.g. Technical Wing"/>
+          </div>
+
+          <div class="form-group full">
+            <label>Snag Description</label>
+            <textarea id="f-desc" placeholder="Describe the snag in detail — what happened, when it was observed, how it affects operations…"></textarea>
+          </div>
+
+          <div class="form-group full">
+            <label>Severity Level</label>
+            <div class="severity-row">
+              <button class="sev-btn selected" data-sev="low" onclick="selectSev(this)">🟢 Low</button>
+              <button class="sev-btn" data-sev="medium" onclick="selectSev(this)">🟡 Medium</button>
+              <button class="sev-btn" data-sev="high" onclick="selectSev(this)">🟠 High</button>
+              <button class="sev-btn" data-sev="critical" onclick="selectSev(this)">🔴 Critical</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Preferred Resolution Date</label>
+            <input type="date" id="f-pref-date"/>
+          </div>
+          <div class="form-group">
+            <label>Contact Email</label>
+            <input type="email" id="f-email" placeholder="cfsate.rep@cfsate.mil"/>
+          </div>
+
+          <div class="form-group full">
+            <label>Additional Remarks</label>
+            <textarea id="f-remarks" rows="2" placeholder="Any additional context, prior attempts at fix, related incidents…"></textarea>
+          </div>
+
+        </div>
+        <div class="form-actions">
+          <button class="btn-secondary" onclick="clearForm()">Clear Form</button>
+          <button class="btn-primary" onclick="submitForm()">⇒ Submit to Aerotrain Corp</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ PANEL: COMPLAINTS ══════════ -->
+  <div class="panel" id="panel-complaints">
+    <div class="form-card">
+      <div class="form-header">
+        <div>
+          <h2>🗂️ COMPLAINT REGISTER</h2>
+          <p>All submitted ISS forms and their current resolution status.</p>
+        </div>
+      </div>
+      <div class="form-body">
+        <div class="table-toolbar">
+          <div class="search-box">
+            <input type="text" id="search-input" placeholder="Search ticket, trainer, description…" oninput="renderTable()"/>
+          </div>
+          <div class="filter-row">
+            <button class="filter-btn active" data-status="all" onclick="filterStatus(this)">All</button>
+            <button class="filter-btn" data-status="open" onclick="filterStatus(this)">Open</button>
+            <button class="filter-btn" data-status="acknowledged" onclick="filterStatus(this)">Acknowledged</button>
+            <button class="filter-btn" data-status="in-progress" onclick="filterStatus(this)">In Progress</button>
+            <button class="filter-btn" data-status="verified" onclick="filterStatus(this)">Verified</button>
+            <button class="filter-btn" data-status="closed" onclick="filterStatus(this)">Closed</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Ticket #</th>
+                <th>Trainer ID</th>
+                <th>Reported By</th>
+                <th>Date</th>
+                <th>Severity</th>
+                <th>Description</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="complaint-tbody"></tbody>
+          </table>
+        </div>
+        <p id="no-results" style="text-align:center;color:var(--muted);padding:40px;display:none;">No complaints match your filter.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ PANEL: PROCESS FLOW ══════════ -->
+  <div class="panel" id="panel-flow">
+    <div class="form-card">
+      <div class="form-header">
+        <div>
+          <h2>🔄 ISS PROCESS FLOW</h2>
+          <p>Standard In-Service Support workflow — CFSATE to Aerotrain Corp.</p>
+        </div>
+      </div>
+      <div class="form-body">
+        <div class="flow-steps">
+
+          <div class="flow-step">
+            <div class="flow-step-connector">
+              <div class="step-circle">1</div>
+              <div class="step-line"></div>
+            </div>
+            <div class="step-body">
+              <h4>Snag Occurs on Trainer</h4>
+              <p>A technical fault, malfunction, or deficiency is identified on a CFSATE trainer unit during operations or routine inspection.</p>
+              <span class="step-role cfsate">CFSATE</span>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <div class="flow-step-connector">
+              <div class="step-circle">2</div>
+              <div class="step-line"></div>
+            </div>
+            <div class="step-body">
+              <h4>Snag Reported on ISS Form</h4>
+              <p>The CFSATE representative logs the snag on the In-Service Support Form, detailing the nature of the fault, affected system, and urgency level.</p>
+              <span class="step-role cfsate">CFSATE</span>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <div class="flow-step-connector">
+              <div class="step-circle">3</div>
+              <div class="step-line"></div>
+            </div>
+            <div class="step-body">
+              <h4>ISS Form Verified &amp; Emailed to Aerotrain Corp</h4>
+              <p>The completed ISS form is verified and dispatched to Aerotrain Corp via the official support channel: <strong style="color:var(--accent)">ISS@aerotraincorp.com</strong></p>
+              <span class="step-role cfsate">CFSATE</span>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <div class="flow-step-connector">
+              <div class="step-circle">4</div>
+              <div class="step-line"></div>
+            </div>
+            <div class="step-body">
+              <h4>Aerotrain Acknowledges &amp; Assigns Ticket</h4>
+              <p>Aerotrain Corp acknowledges receipt, assigns a unique ticket number, and confirms the scheduled date and time of visit to CFSATE for remediation.</p>
+              <span class="step-role aerotrain">AEROTRAIN CORP</span>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <div class="flow-step-connector">
+              <div class="step-circle">5</div>
+              <div class="step-line"></div>
+            </div>
+            <div class="step-body">
+              <h4>Aerotrain Rep Visits CFSATE &amp; Fixes Snag</h4>
+              <p>An Aerotrain engineer visits the facility and carries out the necessary repair or corrective action on the trainer system.</p>
+              <span class="step-role aerotrain">AEROTRAIN CORP</span>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <div class="flow-step-connector">
+              <div class="step-circle">6</div>
+              <div class="step-line"></div>
+            </div>
+            <div class="step-body">
+              <h4>Aerotrain Documents Fix in ISS Form</h4>
+              <p>The Aerotrain representative writes a detailed brief of the corrective action taken, parts replaced, and resolution notes directly in the ISS form.</p>
+              <span class="step-role aerotrain">AEROTRAIN CORP</span>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <div class="flow-step-connector">
+              <div class="step-circle">7</div>
+              <div class="step-line"></div>
+            </div>
+            <div class="step-body">
+              <h4>CFSATE Verifies &amp; Signs Off Fix</h4>
+              <p>The CFSATE representative verifies that the fix is satisfactory and functional, then signs off on the ISS form as confirmation of acceptance.</p>
+              <span class="step-role cfsate">CFSATE</span>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <div class="flow-step-connector">
+              <div class="step-circle">8</div>
+              <div class="step-line"></div>
+            </div>
+            <div class="step-body">
+              <h4>Form Entered in Trainer Log</h4>
+              <p>The completed ISS form is entered into the Trainer Log at CFSATE and a copy is archived at Aerotrain Corp for traceability and compliance records.</p>
+              <span class="step-role both">BOTH PARTIES</span>
+            </div>
+          </div>
+
+          <div class="flow-step">
+            <div class="flow-step-connector">
+              <div class="step-circle">9</div>
+            </div>
+            <div class="step-body" style="border-color:rgba(29,185,84,0.35)">
+              <h4 style="color:var(--success)">✅ Ticket Closed</h4>
+              <p>The support ticket is formally closed. All records are preserved. Snag resolution is complete.</p>
+              <span class="step-role both">CLOSED</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<!-- ─── DETAIL MODAL ─── -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-head">
+      <div>
+        <h3 id="m-title">Snag Details</h3>
+        <div class="ticket-id" id="m-ticket"></div>
+      </div>
+      <button class="close-btn" onclick="closeModal(null, true)">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="detail-grid">
+        <div class="detail-item"><label>Trainer / System</label><span id="m-trainer"></span></div>
+        <div class="detail-item"><label>Reported By</label><span id="m-reporter"></span></div>
+        <div class="detail-item"><label>Date Reported</label><span id="m-date"></span></div>
+        <div class="detail-item"><label>Severity</label><span id="m-sev"></span></div>
+        <div class="detail-item"><label>Status</label><span id="m-status"></span></div>
+        <div class="detail-item"><label>Preferred Resolution</label><span id="m-pref"></span></div>
+        <div class="detail-item" style="grid-column:1/-1"><label>Description</label><span id="m-desc"></span></div>
+        <div class="detail-item" style="grid-column:1/-1"><label>Remarks</label><span id="m-remarks"></span></div>
+      </div>
+
+      <div class="timeline">
+        <h4>Process Timeline</h4>
+        <div id="m-timeline"></div>
+      </div>
+
+      <div class="action-section">
+        <h4>Actions</h4>
+        <div class="action-btns" id="m-actions"></div>
+        <textarea class="note-input" id="action-note" placeholder="Add a note for this action (optional)…" rows="2"></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast">
+  <div class="toast-icon">✅</div>
+  <div class="toast-text">
+    <strong id="toast-title">Success</strong>
+    <span id="toast-msg">Action completed.</span>
+  </div>
+</div>
+
+<script>
+/* ─────────── DATA ─────────── */
+let complaints = JSON.parse(localStorage.getItem('iss_complaints') || '[]');
+let currentFilter = 'all';
+let openModalId = null;
+let currentSeverity = 'low';
+
+/* Pre-seed demo data if empty */
+if (complaints.length === 0) {
+  const demo = [
+    { id:'ISS-0001', trainer:'SIM-A2', reporter:'Sqn Ldr Verma', dept:'Simulation Wing', date:'2026-03-15', severity:'high', desc:'Flight control module unresponsive during pitch axis test. Repeated resets failed.', remarks:'Happened twice this week.', email:'verma@cfsate.mil', prefDate:'2026-03-22', status:'closed', fixBrief:'Replaced FCM board. Tested and verified OK.', closedDate:'2026-03-20' },
+    { id:'ISS-0002', trainer:'TRN-003', reporter:'Wg Cdr Sharma', dept:'Tech Wing', date:'2026-03-28', severity:'critical', desc:'Engine simulation output showing constant fault codes ENG-04 and ENG-07 on both channels.', remarks:'Grounding training ops.', email:'sharma@cfsate.mil', prefDate:'2026-03-30', status:'in-progress', fixBrief:'', closedDate:'' },
+    { id:'ISS-0003', trainer:'TRN-001', reporter:'Flt Lt Kapoor', dept:'Ops Wing', date:'2026-04-01', severity:'medium', desc:'Visual display intermittently losing texture mapping on terrain rendering below 500ft AGL.', remarks:'', email:'kapoor@cfsate.mil', prefDate:'2026-04-10', status:'acknowledged', fixBrief:'', closedDate:'' },
+  ];
+  complaints = demo;
+  saveComplaints();
+}
+
+function saveComplaints() {
+  localStorage.setItem('iss_complaints', JSON.stringify(complaints));
+  updateStats();
+}
+
+function updateStats() {
+  const open   = complaints.filter(c => c.status==='open').length;
+  const active = complaints.filter(c => ['acknowledged','in-progress'].includes(c.status)).length;
+  const closed = complaints.filter(c => ['verified','closed'].includes(c.status)).length;
+  document.getElementById('stat-open').textContent   = open;
+  document.getElementById('stat-active').textContent = active;
+  document.getElementById('stat-closed').textContent = closed;
+  document.getElementById('stat-total').textContent  = complaints.length;
+}
+
+/* ─────────── TABS ─────────── */
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => {
+    b.classList.toggle('active', ['report','complaints','flow'][i]===name);
+  });
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  if(name==='complaints') renderTable();
+}
+
+/* ─────────── SEVERITY ─────────── */
+function selectSev(btn) {
+  document.querySelectorAll('.sev-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  currentSeverity = btn.dataset.sev;
+}
+
+/* ─────────── FORM ─────────── */
+function clearForm() {
+  ['f-trainer','f-date','f-reporter','f-dept','f-desc','f-pref-date','f-email','f-remarks'].forEach(id => {
+    document.getElementById(id).value='';
+  });
+  currentSeverity = 'low';
+  document.querySelectorAll('.sev-btn').forEach(b => b.classList.remove('selected'));
+  document.querySelector('[data-sev="low"]').classList.add('selected');
+}
+
+function submitForm() {
+  const trainer  = document.getElementById('f-trainer').value.trim();
+  const date     = document.getElementById('f-date').value;
+  const reporter = document.getElementById('f-reporter').value.trim();
+  const dept     = document.getElementById('f-dept').value.trim();
+  const desc     = document.getElementById('f-desc').value.trim();
+  const email    = document.getElementById('f-email').value.trim();
+
+  if(!trainer||!date||!reporter||!desc) {
+    showToast('⚠️','Missing Fields','Please fill Trainer ID, Date, Reporter, and Description.', 'warn');
+    return;
+  }
+
+  const nextNum = String(complaints.length + 1).padStart(4,'0');
+  const newItem = {
+    id: `ISS-${nextNum}`,
+    trainer, reporter, dept, date, severity: currentSeverity, desc,
+    remarks: document.getElementById('f-remarks').value.trim(),
+    email,
+    prefDate: document.getElementById('f-pref-date').value,
+    status: 'open',
+    fixBrief: '', closedDate: ''
+  };
+
+  complaints.unshift(newItem);
+  saveComplaints();
+  showToast('✅','Snag Reported Successfully',`Ticket ${newItem.id} created and routed to Aerotrain Corp.`);
+  clearForm();
+}
+
+/* ─────────── TABLE ─────────── */
+function filterStatus(btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentFilter = btn.dataset.status;
+  renderTable();
+}
+
+function renderTable() {
+  const q = (document.getElementById('search-input')?.value || '').toLowerCase();
+  let list = complaints.filter(c => {
+    const matchStatus = currentFilter==='all' || c.status===currentFilter;
+    const matchSearch = !q || c.id.toLowerCase().includes(q) || c.trainer.toLowerCase().includes(q) ||
+                        c.reporter.toLowerCase().includes(q) || c.desc.toLowerCase().includes(q);
+    return matchStatus && matchSearch;
+  });
+
+  const tbody = document.getElementById('complaint-tbody');
+  const noRes = document.getElementById('no-results');
+  tbody.innerHTML = '';
+
+  if(list.length===0){ noRes.style.display='block'; return; }
+  noRes.style.display='none';
+
+  list.forEach(c => {
+    const tr = document.createElement('tr');
+    tr.onclick = () => openModal(c.id);
+    tr.innerHTML = `
+      <td class="td-ticket">${c.id}</td>
+      <td>${c.trainer}</td>
+      <td>${c.reporter}</td>
+      <td>${c.date}</td>
+      <td><span class="sev-dot ${c.severity}"></span>${c.severity.charAt(0).toUpperCase()+c.severity.slice(1)}</td>
+      <td style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.desc}</td>
+      <td><span class="status-pill ${c.status}">${statusLabel(c.status)}</span></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function statusLabel(s) {
+  return { open:'Open', acknowledged:'Acknowledged', 'in-progress':'In Progress', verified:'Verified', closed:'Closed' }[s] || s;
+}
+
+/* ─────────── MODAL ─────────── */
+function openModal(id) {
+  const c = complaints.find(x => x.id===id);
+  if(!c) return;
+  openModalId = id;
+
+  document.getElementById('m-title').textContent   = `Snag: ${c.trainer}`;
+  document.getElementById('m-ticket').textContent  = `Ticket # ${c.id}`;
+  document.getElementById('m-trainer').textContent = c.trainer;
+  document.getElementById('m-reporter').textContent= c.reporter;
+  document.getElementById('m-date').textContent    = c.date;
+  document.getElementById('m-pref').textContent    = c.prefDate || '—';
+  document.getElementById('m-desc').textContent    = c.desc;
+  document.getElementById('m-remarks').textContent = c.remarks || '—';
+  document.getElementById('m-sev').innerHTML       = `<span class="sev-dot ${c.severity}"></span>${c.severity}`;
+  document.getElementById('m-status').innerHTML    = `<span class="status-pill ${c.status}">${statusLabel(c.status)}</span>`;
+  document.getElementById('action-note').value     = '';
+
+  renderTimeline(c);
+  renderActions(c);
+
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal(e, force) {
+  if(force || (e && e.target===document.getElementById('modal-overlay'))) {
+    document.getElementById('modal-overlay').classList.remove('open');
+    openModalId = null;
+  }
+}
+
+function renderTimeline(c) {
+  const steps = [
+    { label:'Snag Occurred & Reported on ISS Form', sub:'CFSATE', done: true },
+    { label:'ISS Form Verified & Emailed to Aerotrain Corp', sub:'CFSATE', done: true },
+    { label:'Aerotrain Acknowledges & Assigns Ticket', sub:'Aerotrain Corp', done: ['acknowledged','in-progress','verified','closed'].includes(c.status) },
+    { label:'Aerotrain Rep Visits & Fixes Snag', sub:'Aerotrain Corp', done: ['in-progress','verified','closed'].includes(c.status) },
+    { label:'CFSATE Verifies & Signs Off Fix', sub:'CFSATE', done: ['verified','closed'].includes(c.status) },
+    { label:'Form Entered in Trainer Log — Ticket Closed', sub:'Both Parties', done: c.status==='closed' },
+  ];
+
+  const curIdx = steps.findLastIndex(s => s.done);
+
+  const html = steps.map((s,i) => {
+    let cls = 'pending';
+    if(s.done) cls = i===curIdx ? 'current' : 'done';
+    const icons = ['📋','📧','🔔','🔧','✅','🗄️'];
+    return `<div class="tl-item">
+      <div class="tl-dot ${cls}">${icons[i]}</div>
+      <div class="tl-content">
+        <p>${s.label}</p>
+        <small>${s.sub} ${s.done ? '· Completed' : '· Pending'}</small>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('m-timeline').innerHTML = html;
+}
+
+function renderActions(c) {
+  const actions = [
+    { label:'Acknowledge', cls:'ack', nextStatus:'acknowledged', showIf: c.status==='open' },
+    { label:'Mark In Progress (Fix Ongoing)', cls:'fix', nextStatus:'in-progress', showIf: c.status==='acknowledged' },
+    { label:'Verify Fix', cls:'verify', nextStatus:'verified', showIf: c.status==='in-progress' },
+    { label:'Close Ticket', cls:'close', nextStatus:'closed', showIf: c.status==='verified' },
+  ];
+  const html = actions.map(a => `
+    <button class="act-btn ${a.cls}" ${!a.showIf ? 'disabled' : ''} onclick="advanceStatus('${a.nextStatus}','${a.label}')">
+      ${a.label}
+    </button>
+  `).join('');
+  document.getElementById('m-actions').innerHTML = html || '<span style="color:var(--muted);font-size:.82rem">No further actions available.</span>';
+}
+
+function advanceStatus(newStatus, label) {
+  const idx = complaints.findIndex(c => c.id===openModalId);
+  if(idx===-1) return;
+  complaints[idx].status = newStatus;
+  if(newStatus==='closed') complaints[idx].closedDate = new Date().toISOString().slice(0,10);
+  const note = document.getElementById('action-note').value.trim();
+  if(note) complaints[idx].fixBrief = note;
+  saveComplaints();
+  openModal(openModalId);
+  renderTable();
+  showToast('✅', label, `Ticket ${openModalId} updated to "${statusLabel(newStatus)}".`);
+}
+
+/* ─────────── TOAST ─────────── */
+function showToast(icon, title, msg, type) {
+  const t = document.getElementById('toast');
+  document.querySelector('#toast .toast-icon').textContent = icon;
+  document.getElementById('toast-title').textContent = title;
+  document.getElementById('toast-title').style.color = type==='warn' ? 'var(--warn)' : 'var(--success)';
+  document.getElementById('toast-msg').textContent = msg;
+  t.style.borderColor = type==='warn' ? 'var(--warn)' : 'var(--success)';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3800);
+}
+
+/* ─────────── INIT ─────────── */
+// set today as default date
+document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
+updateStats();
+</script>
+</body>
+</html>
+
